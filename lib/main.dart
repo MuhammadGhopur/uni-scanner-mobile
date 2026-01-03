@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:uni_scanner/screens/scanner_page.dart';
-import 'package:uni_scanner/services/camera_service.dart';
+import 'screens/scanner_page.dart';
 
-final CameraService _cameraService = CameraService();
+// TAMBAHKAN BARIS INI
+import 'utils/import_csv_to_sqlite.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await _cameraService.initCameras();
+
+  await CsvToSqliteImporter.importCsv(); // sekarang TIDAK ERROR
+
   runApp(const MyApp());
 }
 

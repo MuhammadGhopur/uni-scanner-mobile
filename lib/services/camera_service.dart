@@ -3,7 +3,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 class CameraService {
   late List<CameraDescription> _cameras;
-
   List<CameraDescription> get cameras => _cameras;
 
   Future<void> initCameras() async {
@@ -20,4 +19,3 @@ class CameraService {
     );
   }
 }
-
