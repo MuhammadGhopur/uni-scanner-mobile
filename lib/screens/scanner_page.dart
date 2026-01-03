@@ -18,7 +18,7 @@ class ScannerPage extends StatefulWidget {
 }
 
 class _ScannerPageState extends State<ScannerPage> {
-  late CameraController _cameraController;
+  CameraController? _cameraController;
   final CameraService _cameraService = CameraService();
   final TextRecognitionService _textRecognitionService = TextRecognitionService();
   final GoogleSheetService _googleSheetService = GoogleSheetService();
@@ -27,6 +27,7 @@ class _ScannerPageState extends State<ScannerPage> {
   bool isFlashOn = false;
   bool isScanning = true;
   bool isProcessing = false;
+  bool _isSaving = false; // New variable
   Timer? scanTimer;
 
   String width = "";
@@ -54,11 +55,16 @@ class _ScannerPageState extends State<ScannerPage> {
     await _cameraService.initCameras();
     _cameraController = _cameraService.getCameraController(_cameraService.cameras.first);
 
-    await _cameraController.initialize();
-    await _cameraController.setFlashMode(FlashMode.off);
-
-    _startAutoScan();
-    setState(() {});
+    try {
+      await _cameraController!.initialize();
+      await _cameraController!.setFlashMode(FlashMode.off);
+      if (mounted) {
+        setState(() {});
+      }
+      _startAutoScan();
+    } catch (e) {
+      print("Error initializing camera: $e");
+    }
   }
 
   // ================= AUTO SCAN =================
@@ -71,7 +77,7 @@ class _ScannerPageState extends State<ScannerPage> {
       isProcessing = true;
 
       try {
-        final image = await _cameraController.takePicture();
+        final image = await _cameraController!.takePicture();
         _lastImagePath = image.path; // Store the path
         final inputImage = InputImage.fromFile(File(image.path));
         final result = await _textRecognitionService.processImage(inputImage);
@@ -111,12 +117,18 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   Future<void> saveToExcel() async {
-    if (width.isEmpty || sku.isEmpty || poNumber.isEmpty || usSize.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak ada data untuk ditambahkan.')),
-      );
+    if (_isSaving || width.isEmpty || sku.isEmpty || poNumber.isEmpty || usSize.isEmpty) {
+      if (_isSaving) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sedang menyimpan data...')),
+        );
+      }
       return;
     }
+
+    setState(() {
+      _isSaving = true;
+    });
 
     final data = {
       'width': width,
@@ -144,23 +156,24 @@ class _ScannerPageState extends State<ScannerPage> {
         SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
       print('Error sending data to Google Sheet: $e');
+    } finally {
+      setState(() {
+        width = "";
+        sku = "";
+        poNumber = "";
+        usSize = "";
+        _isSaving = false;
+      });
+
+      await _deleteImageFile(_lastImagePath);
+      _lastImagePath = null;
+
+      _startAutoScan();
     }
-
-    setState(() {
-      width = "";
-      sku = "";
-      poNumber = "";
-      usSize = "";
-    });
-
-    await _deleteImageFile(_lastImagePath);
-    _lastImagePath = null;
-
-    _startAutoScan();
   }
 
   Future<void> toggleFlash() async {
-    await _cameraController.setFlashMode(
+    await _cameraController?.setFlashMode(
       isFlashOn ? FlashMode.off : FlashMode.torch,
     );
     setState(() => isFlashOn = !isFlashOn);
@@ -168,7 +181,7 @@ class _ScannerPageState extends State<ScannerPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_cameraController.value.isInitialized) {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator()),
@@ -179,7 +192,7 @@ class _ScannerPageState extends State<ScannerPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          Positioned.fill(child: CameraPreview(_cameraController)),
+          Positioned.fill(child: CameraPreview(_cameraController!)),
 
           Positioned(
             top: 40,
@@ -242,7 +255,7 @@ class _ScannerPageState extends State<ScannerPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: saveToExcel,
+                            onPressed: _isSaving ? null : saveToExcel,
                             child: const Text("Tambahkan"),
                           ),
                         ),
@@ -258,9 +271,10 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   @override
+  @override
   void dispose() {
     scanTimer?.cancel();
-    _cameraController.dispose();
+    _cameraController?.dispose(); // Use null-aware operator
     _textRecognitionService.dispose();
     _audioPlayer.dispose();
     super.dispose();
