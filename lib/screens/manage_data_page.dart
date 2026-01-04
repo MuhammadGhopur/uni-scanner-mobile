@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:csv/csv.dart';
+import 'dart:io';
 import '../services/sqlite_service.dart';
 
 class ManageDataPage extends StatefulWidget {
@@ -63,7 +66,7 @@ class _ManageDataPageState extends State<ManageDataPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => _addEditProductDialog(context),
+            onPressed: () => _showAddOptionsDialog(context),
             tooltip: 'Create Data',
           ),
         ],
@@ -130,7 +133,7 @@ class _ManageDataPageState extends State<ManageDataPage> {
                                     icon: const Icon(Icons.edit,
                                         color: Colors.blueAccent),
                                     onPressed: () =>
-                                        _addEditProductDialog(context, po: po),
+                                        _showManualAddEditDialog(context, po: po),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.delete,
@@ -182,7 +185,168 @@ class _ManageDataPageState extends State<ManageDataPage> {
      );
    }
 
-  Future<void> _addEditProductDialog(BuildContext context, {Map<String, dynamic>? po}) async {
+  Future<void> _showAddOptionsDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tambah Data'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Tambah Data Manual'),
+              onTap: () {
+                Navigator.pop(context);
+                _showManualAddEditDialog(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.upload_file),
+              title: const Text('Import CSV'),
+              onTap: () {
+                Navigator.pop(context);
+                _showImportCsvDialog(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _importCsvData(BuildContext context, {required String filePath}) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (filePath.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No CSV file selected.')),
+      );
+      return;
+    }
+    print('File Path: $filePath'); // Debug print
+
+    try {
+      final input = await File(filePath).readAsString();
+      print('CSV File Content: $input'); // Debug print
+      final List<List<dynamic>> csvTable = const CsvToListConverter(fieldDelimiter: ';').convert(input);
+      print('CSV Table: $csvTable'); // Debug print
+
+      // Assume the first row is the header
+      if (csvTable.length > 1) {
+        for (int i = 1; i < csvTable.length; i++) {
+          final row = csvTable[i];
+          print('Processing row: $row'); // Debug print
+          if (row.length >= 3) { // Ensure there are at least 3 columns for po_number, cust_id, sku
+            try {
+              await _sqliteService.insertProduct(
+                poNumber: row[0].toString(),
+                custId: row[1].toString(),
+                sku: row[2].toString(),
+              );
+              print('Product inserted successfully!'); // Debug print
+            } catch (e) {
+              print('Error inserting row $row: $e'); // Debug print for insertion errors
+            }
+          }
+        }
+        _loadPoData();
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(content: Text('CSV data imported successfully!')),
+        );
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('CSV file is empty or has no data.')),
+        );
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Error importing CSV: $e')),
+      );
+    }
+  }
+
+  Future<void> _showImportCsvDialog(BuildContext context) async {
+    String? _selectedFilePath;
+    String _selectedFileName = "No file chosen";
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Import Data from CSV'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Ensure your CSV file has the following format (semicolon-separated):',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('PO NUMBER;CUST ID;SKU'),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedFileName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          FilePickerResult? result = await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['csv'],
+                          );
+
+                          if (result != null && result.files.single.path != null) {
+                            setState(() {
+                              _selectedFilePath = result.files.single.path;
+                              _selectedFileName = result.files.single.name;
+                            });
+                          } else {
+                            setState(() {
+                              _selectedFilePath = null;
+                              _selectedFileName = "Pemilihan file dibatalkan.";
+                            });
+                          }
+                        },
+                        child: const Text('Choose File CSV'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: _selectedFilePath != null
+                      ? () async {
+                          Navigator.pop(dialogContext); // Close the dialog
+                          await _importCsvData(context, filePath: _selectedFilePath!); // Pass the selected file path
+                        }
+                      : null, // Disable if no file is selected
+                  child: const Text('Import'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showManualAddEditDialog(BuildContext context, {Map<String, dynamic>? po}) async {
     final isEditing = po != null;
     final poNumberController = TextEditingController(text: isEditing ? po['po_number'] : '');
     final custIdController = TextEditingController(text: isEditing ? po['cust_id'] : '');

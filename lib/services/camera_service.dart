@@ -6,8 +6,6 @@ class CameraService {
   List<CameraDescription> get cameras => _cameras;
 
   Future<void> initCameras() async {
-    await Permission.camera.request();
-    await Permission.storage.request();
     _cameras = await availableCameras();
   }
 

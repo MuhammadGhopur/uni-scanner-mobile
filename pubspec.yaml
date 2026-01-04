@@ -44,20 +44,22 @@ dependencies:
   path: ^1.9.0
 
   http: ^1.2.0
-
+  file_picker: ^8.0.0
+  csv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1 # Added for app icon management
 
-# For information on the generic Dart part of this file, see the
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app-icon.png"
+  remove_alph-ios: true # Optional: Remove alpha channel for iOS icons
+
+# The "flutter_lints" package below contains a set of recommended lints to
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
@@ -72,6 +74,8 @@ flutter:
   assets:
     - assets/sounds/beep.mp3
     - assets/images/nb-logo.png
+    - assets/images/
+    - assets/images/app-icon.png
 
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

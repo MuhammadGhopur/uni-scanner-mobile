@@ -40,7 +40,7 @@ class DashboardPage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 53),
+              const SizedBox(height: 73),
 
 
               // SCAN BUTTON
