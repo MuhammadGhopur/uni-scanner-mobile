@@ -9,15 +9,10 @@ class TextRecognitionService {
   }
 
   String normalize(String text) {
-    return text.toUpperCase().replaceAll('O', '0').replaceAll('I', '1');
-  }
-
-  // ambil PO dari baris ke-4
-  String extractPoFromLine4(List<String> lines) {
-    if (lines.length < 4) return "";
-    final line4 = lines[3].trim();
-    final match = RegExp(r'^P\d{5,7}$').firstMatch(line4);
-    return match != null ? match.group(0)! : "";
+    return text
+        .toUpperCase()
+        .replaceAll('O', '0')
+        .replaceAll('I', '1');
   }
 
   void dispose() {

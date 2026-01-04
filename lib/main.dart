@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'screens/scanner_page.dart';
-
-// TAMBAHKAN BARIS INI
 import 'utils/import_csv_to_sqlite.dart';
+import 'screens/scanner_page.dart';
+import 'services/sqlite_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await CsvToSqliteImporter.importCsv(); // sekarang TIDAK ERROR
-
+  final sqliteService = SQLiteService();
+  final poCount = await sqliteService.getPoCount();
+  if (poCount == 0) {
+    await CsvToSqliteImporter.importCsv();
+  }
   runApp(const MyApp());
 }
 

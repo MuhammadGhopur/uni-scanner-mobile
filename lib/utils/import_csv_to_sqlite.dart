@@ -1,37 +1,46 @@
 import 'dart:io';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
+import '../services/sqlite_service.dart';
 
 class CsvToSqliteImporter {
   static Future<void> importCsv() async {
-    final file = File('/storage/emulated/0/Download/po_data.csv');
+    try {
+      // lokasi download android
+      final downloadDir = Directory('/storage/emulated/0/Download');
+      final sourceFile = File('${downloadDir.path}/po_data.csv');
 
-    if (!await file.exists()) {
-      throw Exception('file csv tidak ditemukan');
-    }
+      if (!await sourceFile.exists()) {
+        throw Exception('csv tidak ada di folder Download');
+      }
 
-    final dbPath = join(await getDatabasesPath(), 'uni_scanner.db');
-    final db = await openDatabase(dbPath);
+      // lokasi aman app
+      final appDir = await getApplicationDocumentsDirectory();
+      final targetFile = File('${appDir.path}/po_data.csv');
 
-    final lines = await file.readAsLines();
+      // copy sekali
+      if (!await targetFile.exists()) {
+        await sourceFile.copy(targetFile.path);
+      }
 
-    // asumsi header:
-    // po_number,cust_id,sku,width
-    for (int i = 1; i < lines.length; i++) {
-      final cols = lines[i].split(',');
+      final lines = await targetFile.readAsLines();
+      int importedRowCount = 0; // New counter
 
-      if (cols.length < 4) continue;
+      for (int i = 2; i < lines.length; i++) {
+        final cols = lines[i].split(',');
 
-      await db.insert(
-        'po_data',
-        {
-          'po_number': cols[0].trim(),
-          'cust_id': cols[1].trim(),
-          'sku': cols[2].trim(),
-          'width': cols[3].trim(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+        if (cols.length < 3) continue;
+
+        await SQLiteService().insertProduct(
+          poNumber: cols[0].trim(),
+          custId: cols[1].trim(),
+          sku: cols[2].trim(),
+        );
+        importedRowCount++; // Increment counter
+      }
+
+      print('import csv sukses');
+    } catch (e) {
+      print('import csv dilewati: $e');
     }
   }
 }
