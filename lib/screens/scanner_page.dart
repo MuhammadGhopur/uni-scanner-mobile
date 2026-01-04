@@ -219,7 +219,7 @@ class _ScannerPageState extends State<ScannerPage> {
                                     context: context,
                                     builder: (BuildContext context) {
                                       return AlertDialog(
-                                        title: const Text('Pilih Right atau Left'),
+                                        title: const Text('Right or Left'),
                                         content: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
@@ -228,7 +228,7 @@ class _ScannerPageState extends State<ScannerPage> {
                                               onTap: () {
                                                 setState(() {
                                                   rightValue = "1";
-                                                  leftValue = "0";
+                                                  leftValue = "";
                                                   qtyValue = "1";
                                                 });
                                                 Navigator.of(context).pop();
@@ -238,7 +238,7 @@ class _ScannerPageState extends State<ScannerPage> {
                                               title: const Text('Left'),
                                               onTap: () {
                                                 setState(() {
-                                                  rightValue = "0";
+                                                  rightValue = "";
                                                   leftValue = "1";
                                                   qtyValue = "1";
                                                 });
@@ -251,7 +251,7 @@ class _ScannerPageState extends State<ScannerPage> {
                                     },
                                   );
 
-                                  if (rightValue == "0" && leftValue == "0") {
+                                  if (rightValue == "" && leftValue == "") {
                                     // User closed the dialog without making a selection
                                     return;
                                   }
@@ -273,8 +273,8 @@ class _ScannerPageState extends State<ScannerPage> {
                                       SnackBar(
                                         content: Text(
                                           success
-                                              ? 'Data berhasil ditambahkan ke Google Sheet!'
-                                              : 'Gagal menambahkan data ke Google Sheet. Cek koneksi atau script Anda.',
+                                              ? 'Data successfully added to Google Sheet!'
+                                              : 'Failed to add data to Google Sheet. Check your connection or script.',
                                         ),
                                       ),
                                     );
@@ -295,7 +295,7 @@ class _ScannerPageState extends State<ScannerPage> {
                                   }
                                 }
                               : null,
-                          child: const Text("Tambahkan"),
+                          child: const Text("Add"),
                         ),
                         ElevatedButton(
                           onPressed: () {
@@ -309,7 +309,7 @@ class _ScannerPageState extends State<ScannerPage> {
                             isScanning = true;
                             _startAutoScan();
                           },
-                          child: const Text("Scan Ulang"),
+                          child: const Text("Rescan"),
                         ),
                       ],
                     ),

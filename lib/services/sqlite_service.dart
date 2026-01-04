@@ -115,6 +115,64 @@ class SQLiteService {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getAllProducts() async {
+    final db = await database;
+    return await db.query('po_data');
+  }
+
+  Future<List<Map<String, dynamic>>> getFilteredProducts({
+    String? searchQuery,
+    int? limit,
+    int? offset,
+  }) async {
+    final db = await database;
+    String whereClause = '';
+    List<dynamic> whereArgs = [];
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      whereClause = 'po_number LIKE ? OR cust_id LIKE ? OR sku LIKE ?';
+      whereArgs = ['%$searchQuery%', '%$searchQuery%', '%$searchQuery%'];
+    }
+
+    return await db.query(
+      'po_data',
+      where: whereClause.isNotEmpty ? whereClause : null,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+      limit: limit,
+      offset: offset,
+      orderBy: 'po_number ASC', // Order by PO number for consistent pagination
+    );
+  }
+
+  Future<void> updateProduct({
+    required int id,
+    required String poNumber,
+    required String custId,
+    required String sku,
+  }) async {
+    final db = await database;
+    await db.update(
+      'po_data',
+      {
+        'po_number': poNumber,
+        'cust_id': custId,
+        'sku': sku,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteProduct(int id) async {
+    final db = await database;
+    await db.delete(
+      'po_data',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> insertScannedData({
     required String poNumber,
     required String sku,

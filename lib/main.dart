@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'utils/import_csv_to_sqlite.dart';
 import 'screens/scanner_page.dart';
+import 'screens/dashboard_page.dart';
 import 'services/sqlite_service.dart';
 
 void main() async {
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ScannerPage(),
+      home: DashboardPage(),
     );
   }
 }
