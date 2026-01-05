@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class GoogleSheetService {
   final String _scriptUrl =
-      'https://script.google.com/macros/s/AKfycbwh-0gDec192F9u28sLtVpGzyrZccd8T8665MXqV4wzs9rwtLeJkPmobVKReTDM4iJn/exec';
+      'https://script.google.com/macros/s/AKfycbww3Q2aXSpn4XbB7U7DqyvOPDhdFhJzhB1R_ftRiITFCFYmBpoRzM5S8bWFr85Qo_4S/exec';
 
   Future<bool> sendScannedData({
     required String poNumber,

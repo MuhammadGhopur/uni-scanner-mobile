@@ -43,6 +43,12 @@
         </intent>
     </queries>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- For Android 13 (API 33) and above, use granular media permissions -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- For older Android versions (pre-API 33) and for general file access -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 </manifest>
 

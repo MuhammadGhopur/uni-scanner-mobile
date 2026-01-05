@@ -1,44 +1,31 @@
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/services.dart' show rootBundle; // Import rootBundle
+import 'package:csv/csv.dart'; // Import csv
 import '../services/sqlite_service.dart';
 
 class CsvToSqliteImporter {
   static Future<void> importCsv() async {
     try {
-      // lokasi download android
-      final downloadDir = Directory('/storage/emulated/0/Download');
-      final sourceFile = File('${downloadDir.path}/po_data.csv');
+      // Read CSV content from assets
+      final csvString = await rootBundle.loadString('assets/po_data.csv');
+      List<List<dynamic>> csvTable = const CsvToListConverter().convert(csvString);
 
-      if (!await sourceFile.exists()) {
-        throw Exception('csv tidak ada di folder Download');
-      }
-
-      // lokasi aman app
-      final appDir = await getApplicationDocumentsDirectory();
-      final targetFile = File('${appDir.path}/po_data.csv');
-
-      // copy sekali
-      if (!await targetFile.exists()) {
-        await sourceFile.copy(targetFile.path);
-      }
-
-      final lines = await targetFile.readAsLines();
       int importedRowCount = 0; // New counter
 
-      for (int i = 2; i < lines.length; i++) {
-        final cols = lines[i].split(',');
+      // Assuming the first row is header and actual data starts from the third row (index 2)
+      for (int i = 2; i < csvTable.length; i++) {
+        final cols = csvTable[i];
 
         if (cols.length < 3) continue;
 
         await SQLiteService().insertProduct(
-          poNumber: cols[0].trim(),
-          custId: cols[1].trim(),
-          sku: cols[2].trim(),
+          poNumber: cols[0].toString().trim(),
+          custId: cols[1].toString().trim(),
+          sku: cols[2].toString().trim(),
         );
         importedRowCount++; // Increment counter
       }
 
-      print('import csv sukses');
+      print('import csv sukses. $importedRowCount baris diimpor dari assets/po_data.csv');
     } catch (e) {
       print('import csv dilewati: $e');
     }

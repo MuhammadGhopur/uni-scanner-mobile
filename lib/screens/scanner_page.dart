@@ -32,6 +32,7 @@ class _ScannerPageState extends State<ScannerPage> {
   bool isScanning = true;
   bool isProcessing = false;
   bool _isAddingData = false;
+  bool _showRescanButton = true; // New state variable
   Timer? scanTimer;
 
   String poNumber = "";
@@ -208,7 +209,8 @@ class _ScannerPageState extends State<ScannerPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        ElevatedButton(
+                        Expanded(
+                          child: ElevatedButton(
                           onPressed: (poNumber.isNotEmpty &&
                                   sku.isNotEmpty &&
                                   width.isNotEmpty &&
@@ -258,6 +260,7 @@ class _ScannerPageState extends State<ScannerPage> {
 
                                   setState(() {
                                     _isAddingData = true;
+                                      _showRescanButton = false; // Hide Rescan button
                                   });
                                   try {
                                     final success = await _googleSheetService.sendScannedData(
@@ -288,7 +291,8 @@ class _ScannerPageState extends State<ScannerPage> {
                                       size = "";
                                       rightValue = "0"; // Reset values
                                       leftValue = "0"; // Reset values
-                                      qtyValue = "0";   // Reset values
+                                        qtyValue = "0"; // Reset values
+                                        _showRescanButton = true; // Show Rescan button again
                                     });
                                     isScanning = true;
                                     _startAutoScan();
@@ -297,7 +301,12 @@ class _ScannerPageState extends State<ScannerPage> {
                               : null,
                           child: const Text("Add"),
                         ),
-                        ElevatedButton(
+                        ),
+                        const SizedBox(width: 10), // Add some spacing
+                        Visibility(
+                          visible: _showRescanButton,
+                          child: Expanded(
+                            child: ElevatedButton(
                           onPressed: () {
                             setState(() {
                               poNumber = "";
@@ -310,6 +319,8 @@ class _ScannerPageState extends State<ScannerPage> {
                             _startAutoScan();
                           },
                           child: const Text("Rescan"),
+                            ),
+                          ),
                         ),
                       ],
                     ),
