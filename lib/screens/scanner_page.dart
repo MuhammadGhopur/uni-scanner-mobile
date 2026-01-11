@@ -88,13 +88,6 @@ class _ScannerPageState extends State<ScannerPage> {
           isScanning = false;
           scanTimer?.cancel();
 
-          try {
-            await _audioPlayer.play(AssetSource('sounds/beep.mp3'));
-          } catch (audioError) {
-            print('ERROR playing audio: $audioError');
-          }
-          HapticFeedback.mediumImpact();
-
           final data = await _sqliteService.getProductByPo(extractedPo);
           final extractedWidth = TextExtractor.extractWidth(raw);
           final extractedSize = TextExtractor.extractSize(raw);
@@ -112,7 +105,12 @@ class _ScannerPageState extends State<ScannerPage> {
                 custId = data['cust_id'] ?? "";
                 width = extractedWidth;
                 size = extractedSize;
-                
+                try {
+                  _audioPlayer.play(AssetSource('sounds/beep.mp3'));
+                } catch (audioError) {
+                  print('ERROR playing audio: $audioError');
+                }
+                HapticFeedback.mediumImpact();
               });
             } else {
               // If not all data is extracted, continue scanning
