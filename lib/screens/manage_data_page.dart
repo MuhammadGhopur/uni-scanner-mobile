@@ -220,7 +220,23 @@ class _ManageDataPageState extends State<ManageDataPage> {
 
     if (filePath.isEmpty) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('No CSV file selected.')),
+        SnackBar(
+          backgroundColor: Colors.grey[800],
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.info, color: Colors.blueAccent, size: 24),
+              SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  'Tidak ada file CSV yang dipilih.',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
       return;
     }
@@ -253,16 +269,64 @@ class _ManageDataPageState extends State<ManageDataPage> {
         _loadPoData();
         if (!mounted) return;
         messenger.showSnackBar(
-          const SnackBar(content: Text('CSV data imported successfully!')),
+          SnackBar(
+            backgroundColor: Colors.grey[800],
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
+                SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'Data CSV berhasil diimpor!',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       } else {
         messenger.showSnackBar(
-          const SnackBar(content: Text('CSV file is empty or has no data.')),
+          SnackBar(
+            backgroundColor: Colors.grey[800],
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.error, color: Colors.redAccent, size: 24),
+                SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'File CSV kosong atau tidak memiliki data.',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Error importing CSV: $e')),
+        SnackBar(
+          backgroundColor: Colors.grey[800],
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, color: Colors.redAccent, size: 24),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  'Error mengimpor CSV: $e',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
   }
@@ -391,7 +455,23 @@ class _ManageDataPageState extends State<ManageDataPage> {
                     sku: skuController.text,
                   );
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Data updated successfully!')),
+                    SnackBar(
+                      backgroundColor: Colors.grey[800],
+                      content: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
+                          SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              'Data berhasil diperbarui!',
+                              style: TextStyle(color: Colors.white, fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 } else {
                   await _sqliteService.insertProduct(
@@ -400,7 +480,23 @@ class _ManageDataPageState extends State<ManageDataPage> {
                     sku: skuController.text,
                   );
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Data added successfully!')),
+                    SnackBar(
+                      backgroundColor: Colors.grey[800],
+                      content: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
+                          SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              'Data berhasil ditambahkan!',
+                              style: TextStyle(color: Colors.white, fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
                 Navigator.pop(context);
@@ -431,7 +527,23 @@ class _ManageDataPageState extends State<ManageDataPage> {
               Navigator.pop(context);
               _loadPoData(); // Refresh the list
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Data deleted successfully!')),
+                SnackBar(
+                  backgroundColor: Colors.grey[800],
+                  content: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
+                      SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          'Data berhasil dihapus!',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent), // Highlight delete action

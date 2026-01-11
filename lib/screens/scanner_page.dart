@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui'; // Import for OverlayEntry
 import 'package:audioplayers/audioplayers.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
@@ -46,6 +47,58 @@ class _ScannerPageState extends State<ScannerPage> {
   String qtyValue = "0";
 
   List<String> _allPoNumbers = [];
+
+  void _showTopNotification(String message, bool isSuccess) {
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 10, // Menyesuaikan dengan status bar
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[800], // Warna abu kehitaman
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isSuccess ? Icons.check_circle : Icons.error,
+                  color: isSuccess ? Colors.greenAccent : Colors.redAccent,
+                  size: 24,
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    message,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    Timer(const Duration(seconds: 3), () {
+      overlayEntry.remove();
+    });
+  }
 
   @override
   void initState() {
@@ -118,9 +171,7 @@ class _ScannerPageState extends State<ScannerPage> {
               _startAutoScan();
             }
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('PO tidak ditemukan di database')),
-            );
+            _showTopNotification('PO tidak ditemukan di database', false);
             isScanning = true;
             _startAutoScan();
           }
@@ -209,114 +260,116 @@ class _ScannerPageState extends State<ScannerPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                          onPressed: (poNumber.isNotEmpty &&
-                                  sku.isNotEmpty &&
-                                  width.isNotEmpty &&
-                                  size.isNotEmpty &&
-                                  !_isAddingData)
-                              ? () async {
-                                  await showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        title: const Text('Right or Left'),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            ListTile(
-                                              title: const Text('Right'),
-                                              onTap: () {
-                                                setState(() {
-                                                  rightValue = "1";
-                                                  leftValue = "";
-                                                  qtyValue = "1";
-                                                });
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                            ListTile(
-                                              title: const Text('Left'),
-                                              onTap: () {
-                                                setState(() {
-                                                  rightValue = "";
-                                                  leftValue = "1";
-                                                  qtyValue = "1";
-                                                });
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  );
-
-                                  if (rightValue == "" && leftValue == "") {
-                                    // User closed the dialog without making a selection
-                                    return;
-                                  }
-
-                                  setState(() {
-                                    _isAddingData = true;
-                                      _showRescanButton = false; // Hide Rescan button
-                                  });
-                                  try {
-                                    final success = await _googleSheetService.sendScannedData(
-                                      poNumber: poNumber,
-                                      sku: sku,
-                                      width: width,
-                                      size: size,
-                                      right: rightValue,
-                                      left: leftValue,
-                                      qty: qtyValue,
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          success
-                                              ? 'Data successfully added to Google Sheet!'
-                                              : 'Failed to add data to Google Sheet. Check your connection or script.',
-                                        ),
-                                      ),
-                                    );
-                                  } finally {
+                            onPressed: (poNumber.isNotEmpty &&
+                                    sku.isNotEmpty &&
+                                    width.isNotEmpty &&
+                                    size.isNotEmpty &&
+                                    !_isAddingData)
+                                ? () async {
                                     setState(() {
-                                      _isAddingData = false;
-                                      poNumber = "";
-                                      sku = "";
-                                      custId = "";
-                                      width = "";
-                                      size = "";
-                                      rightValue = "0"; // Reset values
-                                      leftValue = "0"; // Reset values
+                                      rightValue = "";
+                                      leftValue = "";
+                                      qtyValue = "";
+                                    });
+                                    await showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: const Text('Right or Left'),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                title: const Text('Right'),
+                                                onTap: () {
+                                                  setState(() {
+                                                    rightValue = "1";
+                                                    leftValue = "";
+                                                    qtyValue = "1";
+                                                  });
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                              ListTile(
+                                                title: const Text('Left'),
+                                                onTap: () {
+                                                  setState(() {
+                                                    rightValue = "";
+                                                    leftValue = "1";
+                                                    qtyValue = "1";
+                                                  });
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    );
+
+                                    if (rightValue == "" && leftValue == "") {
+                                      // User closed the dialog without making a selection
+                                      return;
+                                    }
+
+                                    setState(() {
+                                      _isAddingData = true;
+                                      _showRescanButton = false; // Hide Rescan button
+                                    });
+                                    try {
+                                      final success = await _googleSheetService.sendScannedData(
+                                        poNumber: poNumber,
+                                        sku: sku,
+                                        width: width,
+                                        size: size,
+                                        right: rightValue,
+                                        left: leftValue,
+                                        qty: qtyValue,
+                                      );
+                                      _showTopNotification(
+                                        success
+                                            ? 'Data berhasil ditambahkan ke Google Sheet!'
+                                            : 'Gagal menambahkan data ke Google Sheet. Periksa koneksi atau skrip Anda.',
+                                        success,
+                                      );
+                                    } finally {
+                                      setState(() {
+                                        _isAddingData = false;
+                                        poNumber = "";
+                                        sku = "";
+                                        custId = "";
+                                        width = "";
+                                        size = "";
+                                        rightValue = "0"; // Reset values
+                                        leftValue = "0"; // Reset values
                                         qtyValue = "0"; // Reset values
                                         _showRescanButton = true; // Show Rescan button again
-                                    });
-                                    isScanning = true;
-                                    _startAutoScan();
+                                      });
+                                      isScanning = true;
+                                      _startAutoScan();
+                                    }
                                   }
-                                }
-                              : null,
-                          child: const Text("Add"),
-                        ),
+                                : null,
+                            child: const Text("Add"),
+                          ),
                         ),
                         const SizedBox(width: 10), // Add some spacing
                         Visibility(
                           visible: _showRescanButton,
                           child: Expanded(
                             child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              poNumber = "";
-                              sku = "";
-                              custId = "";
-                              width = "";
-                              size = "";
-                            });
-                            isScanning = true;
-                            _startAutoScan();
-                          },
-                          child: const Text("Rescan"),
+                              onPressed: () {
+                                setState(() {
+                                  poNumber = "";
+                                  sku = "";
+                                  custId = "";
+                                  width = "";
+                                  size = "";
+                                });
+                                isScanning = true;
+                                _startAutoScan();
+                              },
+                              child: const Text("Rescan"),
                             ),
                           ),
                         ),
