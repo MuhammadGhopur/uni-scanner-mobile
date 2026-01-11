@@ -18,7 +18,7 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final now = DateTime.now();
   // You can change this date as needed.
-  final expirationDate = DateTime(2026, 1, 12);
+  final expirationDate = DateTime(2026, 1, 18);
   
   // Check if the app is expired
   bool isExpired = now.isAfter(expirationDate);
