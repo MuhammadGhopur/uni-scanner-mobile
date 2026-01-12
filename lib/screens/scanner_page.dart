@@ -9,10 +9,11 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 import '../services/camera_service.dart';
 import '../services/text_recognition_service.dart';
-import '../services/sqlite_service.dart';
+import '../services/firestore_service.dart';
 import '../utils/po_matcher.dart';
 import '../utils/text_extractor.dart';
 import '../services/google_sheet_service.dart';
+import '../models/purchase_order.dart'; // Import PurchaseOrder model
 
 class ScannerPage extends StatefulWidget {
   const ScannerPage({super.key});
@@ -25,7 +26,7 @@ class _ScannerPageState extends State<ScannerPage> {
   CameraController? _cameraController;
   final CameraService _cameraService = CameraService();
   final TextRecognitionService _ocr = TextRecognitionService();
-  final SQLiteService _sqliteService = SQLiteService();
+  final FirestoreService _firestoreService = FirestoreService();
   final AudioPlayer _audioPlayer = AudioPlayer();
   final GoogleSheetService _googleSheetService = GoogleSheetService();
 
@@ -113,7 +114,7 @@ class _ScannerPageState extends State<ScannerPage> {
 
     await _cameraController!.initialize();
     await _cameraController!.setFlashMode(FlashMode.off);
-    _allPoNumbers = await _sqliteService.getAllPoNumbers();
+    _allPoNumbers = await _firestoreService.getAllPoNumbers();
     setState(() {});
     _startAutoScan();
   }
@@ -141,7 +142,7 @@ class _ScannerPageState extends State<ScannerPage> {
           isScanning = false;
           scanTimer?.cancel();
 
-          final data = await _sqliteService.getProductByPo(extractedPo);
+          final data = await _firestoreService.getProductByPo(extractedPo);
           final extractedWidth = TextExtractor.extractWidth(raw);
           final extractedSize = TextExtractor.extractSize(raw);
 
@@ -153,7 +154,7 @@ class _ScannerPageState extends State<ScannerPage> {
                 extractedWidth.isNotEmpty &&
                 extractedSize.isNotEmpty) {
               setState(() {
-                poNumber = extractedPo;
+                poNumber = data['po_number'] ?? ""; // Ekstrak dari map
                 sku = data['sku'] ?? "";
                 custId = data['cust_id'] ?? "";
                 width = extractedWidth;

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 import 'dart:io';
-import '../services/sqlite_service.dart';
+import '../services/firestore_service.dart';
+import '../models/purchase_order.dart'; // Import model PurchaseOrder
 
 class ManageDataPage extends StatefulWidget {
   const ManageDataPage({super.key});
@@ -14,7 +15,7 @@ class ManageDataPage extends StatefulWidget {
 class _ManageDataPageState extends State<ManageDataPage> {
   List<Map<String, dynamic>> _poData = [];
   bool _isLoading = true;
-  late SQLiteService _sqliteService;
+  late FirestoreService _firestoreService;
 
   final TextEditingController _searchController = TextEditingController();
   int _currentPage = 0;
@@ -24,7 +25,7 @@ class _ManageDataPageState extends State<ManageDataPage> {
   @override
   void initState() {
     super.initState();
-    _sqliteService = SQLiteService();
+    _firestoreService = FirestoreService();
     _loadPoData();
     _searchController.addListener(() {
       _currentPage = 0; // Reset ke halaman pertama saat pencarian berubah
@@ -42,12 +43,12 @@ class _ManageDataPageState extends State<ManageDataPage> {
     setState(() {
       _isLoading = true;
     });
-    final data = await _sqliteService.getFilteredProducts(
+    final data = await _firestoreService.getFilteredProducts(
       searchQuery: _searchController.text,
       limit: _itemsPerPage,
       offset: _currentPage * _itemsPerPage,
     );
-    final totalCount = await _sqliteService.getPoCount(); // Get total count for pagination
+    final totalCount = await _firestoreService.getPoCount();
     setState(() {
       _poData = data;
       _totalCount = totalCount;
@@ -217,6 +218,7 @@ class _ManageDataPageState extends State<ManageDataPage> {
 
   Future<void> _importCsvData(BuildContext context, {required String filePath}) async {
     final messenger = ScaffoldMessenger.of(context);
+    final firestoreService = FirestoreService(); // Inisialisasi FirestoreService di sini
 
     if (filePath.isEmpty) {
       messenger.showSnackBar(
@@ -245,67 +247,100 @@ class _ManageDataPageState extends State<ManageDataPage> {
     try {
       final input = await File(filePath).readAsString();
       print('CSV File Content: $input'); // Debug print
-      final List<List<dynamic>> csvTable = const CsvToListConverter(fieldDelimiter: ';').convert(input);
+      // Gunakan CsvToListConverter tanpa fieldDelimiter jika file CSV menggunakan koma
+      // Atau sesuaikan fieldDelimiter jika menggunakan pemisah lain
+      final List<List<dynamic>> csvTable = const CsvToListConverter(fieldDelimiter: ';').convert(input); // Dikembalikan ke titik koma
       print('CSV Table: $csvTable'); // Debug print
 
       // Assume the first row is the header
       if (csvTable.length > 1) {
+        List<PurchaseOrder> newPurchaseOrders = [];
         for (int i = 1; i < csvTable.length; i++) {
           final row = csvTable[i];
           print('Processing row: $row'); // Debug print
+
           if (row.length >= 3) { // Ensure there are at least 3 columns for po_number, cust_id, sku
-            try {
-              await _sqliteService.insertProduct(
-                poNumber: row[0].toString(),
-                custId: row[1].toString(),
-                sku: row[2].toString(),
-              );
-              print('Product inserted successfully!'); // Debug print
-            } catch (e) {
-              print('Error inserting row $row: $e'); // Debug print for insertion errors
-            }
+            final poNumberExtracted = row[0].toString().trim();
+            final custIdExtracted = row[1].toString().trim();
+            final skuExtracted = row[2].toString().trim();
+
+            print('Extracted: PO=$poNumberExtracted, CustID=$custIdExtracted, SKU=$skuExtracted'); // <-- Debug print baru
+
+            newPurchaseOrders.add(PurchaseOrder(
+              poNumber: poNumberExtracted,
+              custId: custIdExtracted,
+              sku: skuExtracted,
+            ));
+          } else {
+            print('Skipping row $i due to insufficient columns: $row');
+            continue; // Lanjutkan ke baris berikutnya jika kolom tidak cukup
           }
+        } // End of for loop
+
+        if (newPurchaseOrders.isNotEmpty) {
+          await firestoreService.uploadPurchaseOrders(newPurchaseOrders); // Unggah ke Firestore
+
+          _loadPoData();
+          if (!mounted) return;
+          messenger.showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.grey[800],
+              content: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
+                  SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      'Data CSV berhasil diimpor ke Firestore!',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          messenger.showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.grey[800],
+              content: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.error, color: Colors.redAccent, size: 24),
+                  SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      'File CSV tidak memiliki data yang valid untuk diimpor.',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
-        _loadPoData();
-        if (!mounted) return;
+      } else { // This else is for `if (csvTable.length > 1)`
         messenger.showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.grey[800],
-            content: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
-                SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    'Data CSV berhasil diimpor!',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                    textAlign: TextAlign.center,
+            SnackBar(
+              backgroundColor: Colors.grey[800],
+              content: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.info, color: Colors.blueAccent, size: 24),
+                  SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      'File CSV kosong atau hanya berisi header.',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      } else {
-        messenger.showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.grey[800],
-            content: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.error, color: Colors.redAccent, size: 24),
-                SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    'File CSV kosong atau tidak memiliki data.',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
         );
       }
     } catch (e) {
@@ -448,8 +483,8 @@ class _ManageDataPageState extends State<ManageDataPage> {
                   custIdController.text.isNotEmpty &&
                   skuController.text.isNotEmpty) {
                 if (isEditing) {
-                  await _sqliteService.updateProduct(
-                    id: po['id'],
+                  await _firestoreService.updateProduct(
+                    id: po['id'].toString(), // Menggunakan ID dokumen Firestore yang sebenarnya
                     poNumber: poNumberController.text,
                     custId: custIdController.text,
                     sku: skuController.text,
@@ -474,7 +509,7 @@ class _ManageDataPageState extends State<ManageDataPage> {
                     ),
                   );
                 } else {
-                  await _sqliteService.insertProduct(
+                  await _firestoreService.insertProduct(
                     poNumber: poNumberController.text,
                     custId: custIdController.text,
                     sku: skuController.text,
@@ -510,7 +545,7 @@ class _ManageDataPageState extends State<ManageDataPage> {
     );
   }
 
-  Future<void> _deleteConfirmationDialog(BuildContext context, int id) async {
+  Future<void> _deleteConfirmationDialog(BuildContext context, String id) async {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -523,7 +558,7 @@ class _ManageDataPageState extends State<ManageDataPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await _sqliteService.deleteProduct(id);
+              await _firestoreService.deleteProduct(id); // Menggunakan ID dokumen Firestore yang sebenarnya
               Navigator.pop(context);
               _loadPoData(); // Refresh the list
               ScaffoldMessenger.of(context).showSnackBar(

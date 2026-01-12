@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "702604567596",
+    "project_id": "uni-scanner-3b8b2",
+    "storage_bucket": "uni-scanner-3b8b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:702604567596:android:750b48588f0a442dae1d89",
+        "android_client_info": {
+          "package_name": "com.example.uni_scanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8CgI8B6b7R4DVgB7-NiKQ8WL20_OI6Aw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

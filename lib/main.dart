@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'screens/expired_page.dart';
+import 'screens/dashboard_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
-import 'utils/import_csv_to_sqlite.dart';
-import 'screens/scanner_page.dart';
-import 'screens/dashboard_page.dart';
-import 'services/sqlite_service.dart';
-import 'screens/expired_page.dart'; // Import ExpiredPage
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'utils/csv_to_firestore_importer.dart'; // Import CsvToFirestoreImporter
+import 'services/firestore_service.dart'; // Import FirestoreService
+// import 'utils/import_csv_to_sqlite.dart'; // Hapus ini
+// import 'services/sqlite_service.dart'; // Hapus ini
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   // Request camera and storage permissions
   await Permission.camera.request();
@@ -23,12 +29,6 @@ void main() async {
   // Check if the app is expired
   bool isExpired = now.isAfter(expirationDate);
 
-
-  final sqliteService = SQLiteService();
-  final poCount = await sqliteService.getPoCount();
-  if (poCount == 0) {
-    await CsvToSqliteImporter.importCsv();
-  }
   runApp(MyApp(isExpired: isExpired)); // Pass expiration status to MyApp
 }
 
